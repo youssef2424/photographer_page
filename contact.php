@@ -43,8 +43,8 @@ if(!filter_var($email, FILTER_VALIDATE_EMAIL)) respond(false, $M['invalid']);
 // Compose email
 $body = "Name: $name\nEmail: $email\nPhone: $phone\n\nMessage:\n$message\n";
 $headers = 'From: '.$email."\r\n".
-           'Reply-To: '.$email."\r\n".
-           'X-Mailer: PHP/'.phpversion();
+          'Reply-To: '.$email."\r\n".
+          'X-Mailer: PHP/'.phpversion();
 
 // Send
 $sent = @mail($to, $subject, $body, $headers);
