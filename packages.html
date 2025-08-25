@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="" />
+  <title>Packages – photographer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;800&family=Cairo:wght@300;400;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="packages" data-title-key="meta.packages.title" data-desc-key="meta.packages.description">
+  <header class="site-header">
+    <div class="container nav">
+      <div class="brand">photographer</div>
+      <nav class="nav-links">
+        <a href="index.html" data-i18n="nav.home">Home</a>
+        <a href="about.html" data-i18n="nav.about">About</a>
+        <a href="portfolio.html" data-i18n="nav.portfolio">Portfolio</a>
+        <a href="packages.html" class="active" data-i18n="nav.packages">Packages</a>
+        <a href="contact.html" data-i18n="nav.contact">Contact</a>
+        <div class="lang-toggle" aria-label="language switcher">
+          <button type="button" data-lang="en" class="active">EN</button>
+          <button type="button" data-lang="ar">AR</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container section">
+    <h1 data-i18n="packages.title">Packages</h1>
+    <div class="pricing" id="pricing"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">photographer</div>
+          <p class="footer-muted">Clean, cinematic photography. Weddings, portraits, events.</p>
+          <div class="socials" aria-label="social links">
+            <a href="#" aria-label="Instagram" title="Instagram">IG</a>
+            <a href="#" aria-label="Facebook" title="Facebook">FB</a>
+            <a href="#" aria-label="TikTok" title="TikTok">TT</a>
+          </div>
+        </div>
+        <div>
+          <div class="footer-brand">Contact</div>
+          <ul class="contact-list">
+            <li><a href="mailto:hello@example.com">hello@example.com</a></li>
+            <li><a href="tel:+1234567890">+1 234 567 890</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer-brand">Links</div>
+          <ul class="contact-list">
+            <li><a href="index.html" data-i18n="nav.home">Home</a></li>
+            <li><a href="about.html" data-i18n="nav.about">About</a></li>
+            <li><a href="portfolio.html" data-i18n="nav.portfolio">Portfolio</a></li>
+            <li><a href="packages.html" data-i18n="nav.packages">Packages</a></li>
+            <li><a href="contact.html" data-i18n="nav.contact">Contact</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <small>© <span id="footer-year"></span> photographer. All rights reserved.</small>
+        <small class="footer-muted">Built &amp; Designed By <a href="mailto:youssefgerges103@gmail.com">Youssef
+          Gerges</a>.</small>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+{
+  "meta": {
+    "siteName": "photographer",
+    "home": { "title": "Photographer – Cinematic Stories", "description": "Modern photography portfolio: weddings, portraits, events." },
+    "about": { "title": "About – Photographer", "description": "Our story, process, and philosophy." },
+    "portfolio": { "title": "Portfolio – Photographer", "description": "Selected works across weddings, portraits, and events." },
+    "packages": { "title": "Packages – Photographer", "description": "Transparent pricing and packages." },
+    "contact": { "title": "Contact – Photographer", "description": "Inquire about availability and packages." }
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "portfolio": "Portfolio",
+    "packages": "Packages",
+    "contact": "Contact"
+  },
+  "home": {
+    "weddingAlbum": "Wedding Highlights",
+    "ctaOffers": "See Our Offers",
+    "ctaStory": "Discover Our Story",
+    "ctaContact": "Get in Touch"
+  },
+  "about": {
+    "title": "Crafting cinematic stories through light.",
+    "body": "We are a small studio obsessed with genuine moments and timeless color. From intimate weddings to editorial portraits, we focus on honest storytelling and refined aesthetics."
+  },
+  "portfolio": {
+    "title": "Selected Works"
+  },
+  "packages": {
+    "title": "Packages",
+    "currency": "$",
+    "tiers": [
+      {"id":"basic","name":"Basic","price":"799","features":["Up to 2 hours coverage","50 edited photos","Online gallery","Delivery within 7 days"]},
+      {"id":"standard","name":"Standard","price":"1499","features":["Up to 6 hours coverage","200 edited photos","Online gallery & USB","Delivery within 10 days"]},
+      {"id":"premium","name":"Premium","price":"2499","features":["Full-day coverage","Unlimited edited photos","Second shooter","Album + Prints"]}
+    ]
+  },
+  "contact": {
+    "title": "Let's create together",
+    "form": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "message": "Message",
+      "submit": "Send Message"
+    },
+    "messages": {
+      "success": "Thanks! Your message has been sent.",
+      "error": "Something went wrong. Please try again.",
+      "invalid": "Please complete all required fields correctly."
+    }
+  },
+  "footer": {
+    "copyright": "© "
+  }
+}

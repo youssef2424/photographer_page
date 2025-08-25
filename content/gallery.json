@@ -1,0 +1,15 @@
+{
+  "categories": [
+    {"id":"weddings","en":"Weddings","ar":"حفلات الزفاف"},
+    {"id":"portraits","en":"Portraits","ar":"البورتريه"},
+    {"id":"events","en":"Events","ar":"الفعاليات"}
+  ],
+  "images": [
+    {"src":"https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1600&auto=format&fit=crop","category":"weddings","alt_en":"Wedding rings and bouquet","alt_ar":"خواتم زفاف وباقة"},
+    {"src":"https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?q=80&w=1600&auto=format&fit=crop","category":"weddings","alt_en":"First dance","alt_ar":"الرقصة الأولى"},
+    {"src":"https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1600&auto=format&fit=crop","category":"portraits","alt_en":"Studio portrait","alt_ar":"بورتريه استوديو"},
+    {"src":"https://images.unsplash.com/photo-1531123897727-8f129e1688ce?q=80&w=1600&auto=format&fit=crop","category":"portraits","alt_en":"Natural light portrait","alt_ar":"بورتريه بضوء طبيعي"},
+    {"src":"https://images.unsplash.com/photo-1506157786151-b8491531f063?q=80&w=1600&auto=format&fit=crop","category":"events","alt_en":"Live show","alt_ar":"عرض حي"},
+    {"src":"https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1600&auto=format&fit=crop","category":"events","alt_en":"Conference keynote","alt_ar":"كلمة المؤتمر"}
+  ]
+}
