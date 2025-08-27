@@ -11,11 +11,13 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightbox2@2/dist/css/lightbox.min.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
 <body data-page="home" data-title-key="meta.home.title" data-desc-key="meta.home.description">
   <header class="site-header">
     <div class="container nav">
       <div class="brand">photographer</div>
+      <button class="burger" aria-label="Open menu" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
       <nav class="nav-links">
         <a href="index.html" class="active" data-i18n="nav.home">Home</a>
         <a href="about.html" data-i18n="nav.about">About</a>
@@ -30,7 +32,34 @@
     </div>
   </header>
 
+  <!-- Mobile Overlay Menu -->
+  <div class="mobile-menu" aria-modal="true" role="dialog" aria-label="Site menu">
+    <div class="mobile-top">
+      <button class="burger" aria-label="Close menu" aria-expanded="true"><i class="fa-solid fa-xmark"></i></button>
+      <button class="theme-toggle header-theme-toggle" aria-label="Toggle theme"><span class="icon"><i class="fa-regular fa-moon"></i></span></button>
+    </div>
+    <div class="panel">
+      <nav>
+        <a href="index.html" data-i18n="nav.home">Home</a>
+        <a href="about.html" data-i18n="nav.about">About</a>
+        <a href="portfolio.html" data-i18n="nav.portfolio">Portfolio</a>
+        <a href="packages.html" data-i18n="nav.packages">Packages</a>
+        <a href="contact.html" data-i18n="nav.contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+
   <main>
+    <!-- Fixed Sidebars -->
+    <div class="fixed-left">
+      <button class="theme-toggle" aria-label="Toggle theme"><span class="icon"><i class="fa-regular fa-moon"></i></span></button>
+    </div>
+    <div class="fixed-right social-fixed" aria-label="social">
+      <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+      <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+      <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+      <a href="#" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+    </div>
     <section class="hero">
       <div class="swiper">
         <div class="swiper-wrapper" id="hero-slides"></div>
@@ -67,6 +96,18 @@
         </a>
       </div>
     </section>
+
+    <!-- Stats Section -->
+    <section class="stats">
+      <div class="container">
+        <div class="stats-grid">
+          <div class="stat"><div class="num" data-target="1000000+">0</div><div class="label">Stunning Shots</div></div>
+          <div class="stat"><div class="num" data-target="900+">0</div><div class="label">Weddings</div></div>
+          <div class="stat"><div class="num" data-target="60000+">0</div><div class="label">Followers</div></div>
+          <div class="stat"><div class="num" data-target="12+">0</div><div class="label">Years Of Experience</div></div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -76,9 +117,9 @@
           <div class="footer-brand">photographer</div>
           <p class="footer-muted">Clean, cinematic photography. Weddings, portraits, events.</p>
           <div class="socials" aria-label="social links">
-            <a href="#" aria-label="Instagram" title="Instagram">I</a>
-            <a href="#" aria-label="Facebook" title="Facebook">F</a>
-            <a href="#" aria-label="TikTok" title="TikTok">T</a>
+            <a href="#" aria-label="Instagram" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#" aria-label="Facebook" title="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+            <a href="#" aria-label="Twitter" title="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
           </div>
         </div>
         <div>
@@ -111,5 +152,6 @@
   <script src="https://cdn.jsdelivr.net/npm/lightbox2@2/dist/js/lightbox.min.js"></script>
   <script src="js/main.js"></script>
   <script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+  <button id="scrollTop" aria-label="Scroll to top"><i class="fa-solid fa-arrow-up"></i></button>
 </body>
 </html>
