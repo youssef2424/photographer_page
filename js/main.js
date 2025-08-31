@@ -19,10 +19,43 @@ function initScrollTop(){
   window.addEventListener('scroll', ()=>{
     if(window.scrollY > 400) btn.classList.add('show'); else btn.classList.remove('show');
   });
-  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  btn.addEventListener('click', ()=> {
-    if(prefersReduced) window.scrollTo(0,0);
-    else window.scrollTo({top:0, behavior:'smooth'});
+  // Helper: custom smoother scroll (slower and consistent)
+  function animateScrollToTop(duration){
+    const startY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    if(startY === 0) return;
+    // Compute duration based on distance: 700ms base + 600ms per 1000px, clamped
+    const computedDuration = Math.max(100, Math.min(1000, 500 + (startY/1000)*400));
+    const total = typeof duration === 'number' ? duration : computedDuration;
+    const startTime = performance.now();
+    // Easing: easeOutCubic for a gentle finish
+    const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+    let rafId;
+
+    const step = (now)=>{
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / total, 1);
+      const eased = easeOutCubic(progress);
+      const y = Math.round(startY * (1 - eased));
+      window.scrollTo(0, y);
+      if(progress < 1) rafId = requestAnimationFrame(step);
+    };
+
+    const cancel = ()=>{
+      if(rafId) cancelAnimationFrame(rafId);
+      window.removeEventListener('wheel', cancel, passiveOpts);
+      window.removeEventListener('touchstart', cancel, passiveOpts);
+      window.removeEventListener('keydown', cancel);
+    };
+    const passiveOpts = { passive: true };
+    window.addEventListener('wheel', cancel, passiveOpts);
+    window.addEventListener('touchstart', cancel, passiveOpts);
+    window.addEventListener('keydown', cancel);
+    rafId = requestAnimationFrame(step);
+  }
+
+  btn.addEventListener('click', (e)=> {
+    e.preventDefault();
+    animateScrollToTop(); // distance-based smooth animation
     btn.blur();
   });
 }
@@ -69,6 +102,9 @@ function applyCopy(copy){
   const descKey = document.body.dataset.descKey;
   if(titleKey){ document.title = get(copy, titleKey) || document.title; }
   if(descKey){ let d = qs('meta[name="description"]'); if(d) d.setAttribute('content', get(copy, descKey) || ''); }
+  // Update Open Graph tags
+  const ogTitle = qs('meta[property="og:title"]'); if(ogTitle) ogTitle.setAttribute('content', document.title);
+  const ogDesc = qs('meta[property="og:description"]'); if(ogDesc) ogDesc.setAttribute('content', (descKey? get(copy, descKey):'') || '');
 }
 
 function get(obj, path){
@@ -117,6 +153,9 @@ function initMobileMenu(){
     lastFocused = document.activeElement;
     overlay.classList.add('active');
     burger.setAttribute('aria-expanded','true');
+    document.body.classList.add('menu-open');
+    // swap icon to X
+    const i = burger.querySelector('i'); if(i){ i.classList.remove('fa-bars'); i.classList.add('fa-xmark'); }
     setScrollLock(true);
     setTimeout(()=>{ (overlay.querySelector(focusablesSel)||burger).focus(); }, 0);
     document.addEventListener('keydown', trapFocus);
@@ -124,6 +163,9 @@ function initMobileMenu(){
   function close(){
     overlay.classList.remove('active');
     burger.setAttribute('aria-expanded','false');
+    document.body.classList.remove('menu-open');
+    // swap icon back to burger
+    const i = burger.querySelector('i'); if(i){ i.classList.add('fa-bars'); i.classList.remove('fa-xmark'); }
     setScrollLock(false);
     document.removeEventListener('keydown', trapFocus);
     if(lastFocused) lastFocused.focus();
@@ -170,7 +212,7 @@ async function renderHome(){
   if(wrap){
     wrap.innerHTML = data.hero.map(s=> `
       <div class="swiper-slide">
-        <img src="${s.src}" alt="${STATE.lang==='ar'? (s.alt_ar||'') : (s.alt_en||'')}" loading="eager"/>
+        <img src="${s.src}" alt="${STATE.lang==='ar'? (s.alt_ar||'') : (s.alt_en||'')}" loading="eager" decoding="async"/>
         <div class="caption">${STATE.lang==='ar'? (s.caption_ar||'') : (s.caption_en||'')}</div>
       </div>`).join('');
     // init swiper
@@ -183,9 +225,24 @@ async function renderHome(){
     grid.innerHTML = data.wedding.slice(0,4).map(s=> {
       const alt = STATE.lang==='ar'? (s.alt_ar||'') : (s.alt_en||'');
       return `<a href="${s.src}" data-lightbox="wedding" data-title="${alt}">
-        <img src="${s.src}" alt="${alt}" loading="lazy"/>
+        <img src="${s.src}" alt="${alt}" loading="lazy" decoding="async"/>
       </a>`;
     }).join('');
+    // Bind lightbox to home grid
+    const items = data.wedding.slice(0,4);
+    qsa('#wedding-grid a', grid).forEach((a, idx)=>{
+      a.addEventListener('click', (ev)=>{
+        ev.preventDefault();
+        openLightbox(items, idx, a);
+      });
+    });
+  }
+  // Inject localized CTA copy if present
+  const cta = qs('#home-cta-text');
+  if(cta){
+    cta.textContent = STATE.lang==='ar'
+      ? 'احتفل بقصتكما الفريدة بالتقاط كل تفصيلة بلمسة من الأناقة والجمال الخالد'
+      : 'Celebrate Your Unique Love Story By Capturing Every Detail With A Touch Of Sophistication And Timeless Beauty';
   }
 }
 
@@ -227,7 +284,7 @@ async function renderPortfolio(){
     gallery.innerHTML = filtered.map((s,idx)=>{
       const alt = STATE.lang==='ar'? (s.alt_ar||'') : (s.alt_en||'');
       return `<a href="${s.src}" class="g-item" data-index="${idx}" data-title="${alt}">
-        <img src="${s.src}" alt="${alt}" loading="lazy"/>
+        <img src="${s.src}" alt="${alt}" loading="lazy" decoding="async"/>
       </a>`;
     }).join('');
     // bind lightbox open
@@ -252,7 +309,7 @@ function openLightbox(items, startIndex, triggerEl){
   const modal = ensureLightbox();
   if(!modal) return;
   const wrap = qs('#lightbox-wrapper');
-  wrap.innerHTML = items.map(it=>`<div class="swiper-slide"><img src="${it.src}" alt=""></div>`).join('');
+  wrap.innerHTML = items.map(it=>`<div class="swiper-slide"><img src="${it.src}" alt="" decoding="async"></div>`).join('');
   if(window.lightboxSwiper){ window.lightboxSwiper.destroy(true,true); }
   window.lightboxSwiper = new Swiper('#lightbox-swiper', { initialSlide:startIndex||0, loop:true, navigation:{ nextEl:'#lightbox-next', prevEl:'#lightbox-prev' }, pagination:{ el:'#lightbox-pag', type:'fraction' }, keyboard:{enabled:true}, on:{ init(){ const cont = qs('#lightbox-swiper'); if(cont){ cont.addEventListener('click', (e)=>{ const isNav = e.target.closest('.swiper-button-next, .swiper-button-prev, .swiper-pagination'); if(!isNav) window.lightboxSwiper.slideNext(); }); } } } });
   modal.classList.add('active');
@@ -310,7 +367,15 @@ function initContact(){
   if(!form) return;
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
+    // Validate using native constraints
+    if(!form.checkValidity()){
+      form.reportValidity();
+      return;
+    }
     alert.textContent=''; alert.className='alert';
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const prevLabel = submitBtn ? submitBtn.textContent : '';
+    if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = (get(STATE.copy,'contact.form.submit')||'Send') + '…'; }
     const fd = new FormData(form);
     // include current language for localized responses from PHP
     fd.append('lang', STATE.lang || DEFAULT_LANG);
@@ -323,6 +388,8 @@ function initContact(){
     }catch(err){
       alert.classList.add('err');
       alert.textContent = get(STATE.copy,'contact.messages.error') || 'Error';
+    } finally {
+      if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = prevLabel; }
     }
   });
 }
@@ -354,9 +421,64 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   initScrollTop();
   initReveal();
   if(STATE.page==='home' || STATE.page==='about') initStats();
+  // ensure canonical link
+  let canonical = qs('link[rel="canonical"]');
+  const cleanUrl = location.origin + location.pathname;
+  if(!canonical){ canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+  canonical.setAttribute('href', cleanUrl);
+  // Open Graph URL
+  const ogUrl = qs('meta[property="og:url"]'); if(ogUrl) ogUrl.setAttribute('content', cleanUrl);
   // lightbox close
   const closeBtn = qs('#lightbox-close');
   if(closeBtn) closeBtn.addEventListener('click', closeLightbox);
   qs('#lightbox-modal')?.addEventListener('click', (e)=>{ if(e.target.id==='lightbox-modal') closeLightbox(); });
   document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && qs('#lightbox-modal')?.classList.contains('active')) closeLightbox(); });
 });
+
+document.addEventListener('contextmenu', function(event) {
+  event.preventDefault();
+  
+  if (!document.getElementById('custom-overlay')) {
+    // Create fullscreen transparent black background overlay
+    var overlay = document.createElement('div');
+    overlay.id = 'custom-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(0, 0, 0, 0.7)'; // transparent black
+    overlay.style.display = 'flex';
+    overlay.style.justifyContent = 'center';
+    overlay.style.alignItems = 'center';
+    overlay.style.zIndex = '10000';
+
+    // Create the message box with fade-in animation
+    var msg = document.createElement('div');
+    msg.textContent = 'Hah, nice try!';
+    msg.style.color = '#fff';
+    msg.style.fontSize = '2rem';
+    msg.style.padding = '20px 50px';
+    msg.style.borderRadius = '10px';
+    msg.style.background = 'rgba(0, 0, 0, 0.8)';
+    msg.style.opacity = '0';
+    msg.style.transition = 'opacity 0.5s ease';
+
+    overlay.appendChild(msg);
+    document.body.appendChild(overlay);
+
+    // Trigger fade-in
+    setTimeout(() => {
+      msg.style.opacity = '1';
+    }, 10);
+
+    // Fade out and remove after 2 seconds
+    setTimeout(() => {
+      msg.style.opacity = '0';
+      setTimeout(() => {
+        overlay.remove();
+      }, 500);
+    }, 2000);
+  }
+});
+

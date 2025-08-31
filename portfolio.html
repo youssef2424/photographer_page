@@ -3,12 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="" />
+  <meta name="description" content="Explore selected works across weddings, portraits, and events. Open images in a lightbox with smooth navigation." />
   <title>Portfolio – photographer</title>
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="photographer">
+  <meta property="og:title" content="Portfolio – photographer">
+  <meta property="og:description" content="Explore selected works across weddings, portraits, and events. Open images in a lightbox with smooth navigation.">
+  <meta property="og:url" content="">
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Portfolio – photographer">
+  <meta name="twitter:description" content="Explore selected works across weddings, portraits, and events. Open images in a lightbox with smooth navigation.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;800&family=Cairo:wght@300;400;700;800&display=swap" rel="stylesheet">
+  <!-- Normalize reset first -->
+  <link rel="stylesheet" href="css/normalize.css">
   <link rel="stylesheet" href="css/style.css" />
+  <!-- Additional Google fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300..700;1,300..700&family=Quattrocento+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -54,10 +68,7 @@
       <button class="theme-toggle" aria-label="Toggle theme"><span class="icon"><i class="fa-regular fa-moon"></i></span></button>
     </div>
     <div class="fixed-right social-fixed" aria-label="social">
-      <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-      <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-      <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
-      <a href="#" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+      <a href="#" aria-label="Instagram" target="_blank"><i class="fa-brands fa-instagram"></i><span data-text="Instagram"></span></a>
     </div>
     <h1 data-i18n="portfolio.title">Selected Works</h1>
     <div class="filter-bar"></div>
@@ -110,7 +121,7 @@
       <div class="swiper-button-next" id="lightbox-next" aria-label="next"></div>
       <div class="swiper-pagination" id="lightbox-pag"></div>
     </div>
-    <button id="lightbox-close" aria-label="Close" style="position:absolute;top:16px;right:16px;background:#fff;border:0;border-radius:50%;width:40px;height:40px"><i class="fa-solid fa-xmark"></i></button>
+    <button id="lightbox-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
   <script src="js/main.js"></script>
