@@ -1,15 +1,42 @@
 /* Global Config */
-const DEFAULT_LANG = 'en'; // change to 'ar' for Arabic default
-const STATE = { lang: null, copy: null, page: null };
+const STATE = { page: null };
 
 const qs = (s, r=document) => r.querySelector(s);
 const qsa = (s, r=document) => Array.from(r.querySelectorAll(s));
 
-function setDirAndLang(lang){
-  const html = document.documentElement;
-  const dir = lang === 'ar' ? 'rtl' : 'ltr';
-  html.setAttribute('lang', lang);
-  html.setAttribute('dir', dir);
+/* Navbar Scroll Behavior */
+function initNavbarScroll(){
+  const header = qs('.site-header');
+  if(!header) return;
+  
+  let lastScroll = 0;
+  const scrollThreshold = 50; // Pixels to scroll before adding class
+  
+  function handleScroll(){
+    const currentScroll = window.scrollY || document.documentElement.scrollTop;
+    
+    if(currentScroll > scrollThreshold){
+      header.classList.add('scrolled');
+    } else {
+      header.classList.remove('scrolled');
+    }
+    lastScroll = currentScroll;
+  }
+  
+  // Initial check
+  handleScroll();
+  
+  // Listen to scroll with throttle for performance
+  let ticking = false;
+  window.addEventListener('scroll', ()=>{
+    if(!ticking){
+      window.requestAnimationFrame(()=>{
+        handleScroll();
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, {passive: true});
 }
 
 /* Scroll to top */
@@ -84,35 +111,6 @@ function animateNumber(el){
   requestAnimationFrame(step);
 }
 
-async function loadCopy(lang){
-  const res = await fetch(`content/copy.${lang}.json?_=${Date.now()}`);
-  if(!res.ok) throw new Error('Failed to load copy');
-  return await res.json();
-}
-
-function applyCopy(copy){
-  // Update text nodes
-  qsa('[data-i18n]').forEach(el => {
-    const path = el.getAttribute('data-i18n');
-    const val = get(copy, path);
-    if(typeof val === 'string') el.textContent = val;
-  });
-  // Update meta title/description if present
-  const titleKey = document.body.dataset.titleKey;
-  const descKey = document.body.dataset.descKey;
-  if(titleKey){ document.title = get(copy, titleKey) || document.title; }
-  if(descKey){ let d = qs('meta[name="description"]'); if(d) d.setAttribute('content', get(copy, descKey) || ''); }
-  // Update Open Graph tags
-  const ogTitle = qs('meta[property="og:title"]'); if(ogTitle) ogTitle.setAttribute('content', document.title);
-  const ogDesc = qs('meta[property="og:description"]'); if(ogDesc) ogDesc.setAttribute('content', (descKey? get(copy, descKey):'') || '');
-}
-
-function get(obj, path){
-  return path.split('.').reduce((o,k)=> (o&&o[k]!=null)?o[k]:undefined, obj);
-}
-
-function saveLang(lang){ localStorage.setItem('lang', lang); }
-function readLang(){ return localStorage.getItem('lang') || DEFAULT_LANG; }
 
 /* Theme */
 const THEME_KEY = 'theme';
@@ -120,11 +118,25 @@ function applyTheme(theme){
   document.body.classList.remove('light','dark');
   document.body.classList.add(theme);
 }
-function readTheme(){ return localStorage.getItem(THEME_KEY) || 'dark'; }
+function readTheme(){ return localStorage.getItem(THEME_KEY) || 'light'; }
 function saveTheme(theme){ localStorage.setItem(THEME_KEY, theme); }
 function toggleTheme(){
   const next = document.body.classList.contains('dark') ? 'light' : 'dark';
   applyTheme(next); saveTheme(next);
+  updateThemeIcons(next);
+}
+
+function updateThemeIcons(theme){
+  const icons = qsa('.theme-toggle i');
+  icons.forEach(icon => {
+    if(theme === 'dark'){
+      icon.classList.remove('fa-sun');
+      icon.classList.add('fa-moon');
+    } else {
+      icon.classList.remove('fa-moon');
+      icon.classList.add('fa-sun');
+    }
+  });
 }
 
 /* Mobile Menu (burger + overlay) */
@@ -190,40 +202,58 @@ function initReveal(){
   els.forEach(el=> io.observe(el));
 }
 
-async function switchLang(lang){
-  STATE.lang = lang;
-  setDirAndLang(lang);
-  STATE.copy = await loadCopy(lang);
-  applyCopy(STATE.copy);
-  // toggle active
-  qsa('[data-lang]').forEach(b=> b.classList.toggle('active', b.dataset.lang===lang));
-  // rerender page specifics
-  if(STATE.page==='home') await renderHome();
-  if(STATE.page==='portfolio') await renderPortfolio();
-  if(STATE.page==='packages') await renderPackages();
-}
 
 /* Home */
 async function renderHome(){
   const res = await fetch('content/home.json?_=' + Date.now());
   const data = await res.json();
-  // Hero
-  const wrap = qs('#hero-slides');
-  if(wrap){
-    wrap.innerHTML = data.hero.map(s=> `
-      <div class="swiper-slide">
-        <img src="${s.src}" alt="${STATE.lang==='ar'? (s.alt_ar||'') : (s.alt_en||'')}" loading="eager" decoding="async"/>
-        <div class="caption">${STATE.lang==='ar'? (s.caption_ar||'') : (s.caption_en||'')}</div>
-      </div>`).join('');
-    // init swiper
-    if(window.heroSwiper){ window.heroSwiper.destroy(true,true); }
-    window.heroSwiper = new Swiper('.hero .swiper', { loop:true, autoplay:{delay:3500, disableOnInteraction:false}, speed:700, effect:'fade', pagination:{el:'.swiper-pagination', clickable:true}, navigation:{nextEl:'.swiper-button-next', prevEl:'.swiper-button-prev'} });
+  
+  // Hero - Main image with infinite carousel
+  const heroSection = qs('.hero');
+  if(heroSection && data.hero){
+    const mainImage = data.hero.mainImage || data.hero[0];
+    const carouselImages = data.hero.carousel || data.hero.slice(1, 5);
+    
+    heroSection.innerHTML = `
+      <div class="hero-main-image">
+        <img src="${mainImage.src}" alt="${mainImage.alt || 'Hero Image'}" loading="eager" decoding="async"/>
+        <div class="elementor-image-carousel-wrapper">
+          <div class="carousel-container">
+            <div class="carousel-track" id="carousel-track">
+              ${carouselImages.map((img, idx) => `
+                <div class="carousel-item">
+                  <img src="${img.src}" alt="${img.alt || 'Wedding highlight ' + (idx + 1)}" loading="lazy" decoding="async"/>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Hero CTA overlay -->
+      <div class="cta-wrap" aria-label="Primary call to action">
+        <h1 class="cta-text">Capturing Moments That Last Forever</h1>
+        <div class="cta-buttons">
+          <a href="contact.html" class="btn primary" aria-label="Let's Talk – contact">
+            <span>Let's Talk</span>
+            <span class="icon"><i class="fa-solid fa-arrow-right"></i></span>
+          </a>
+          <a href="portfolio.html" class="btn secondary" aria-label="View Portfolio">
+            <span>View Portfolio</span>
+            <span class="icon"><i class="fa-solid fa-arrow-right"></i></span>
+          </a>
+        </div>
+      </div>
+    `;
+    
+    // Initialize infinite carousel
+    initHeroCarousel();
   }
+  
   // Wedding album 4
   const grid = qs('#wedding-grid');
-  if(grid){
+  if(grid && data.wedding){
     grid.innerHTML = data.wedding.slice(0,4).map(s=> {
-      const alt = STATE.lang==='ar'? (s.alt_ar||'') : (s.alt_en||'');
+      const alt = s.alt || '';
       return `<a href="${s.src}" data-lightbox="wedding" data-title="${alt}">
         <img src="${s.src}" alt="${alt}" loading="lazy" decoding="async"/>
       </a>`;
@@ -237,13 +267,223 @@ async function renderHome(){
       });
     });
   }
-  // Inject localized CTA copy if present
-  const cta = qs('#home-cta-text');
-  if(cta){
-    cta.textContent = STATE.lang==='ar'
-      ? 'احتفل بقصتكما الفريدة بالتقاط كل تفصيلة بلمسة من الأناقة والجمال الخالد'
-      : 'Celebrate Your Unique Love Story By Capturing Every Detail With A Touch Of Sophistication And Timeless Beauty';
+}
+
+/* Infinite Hero Carousel - Touch Swipe & Click-Drag */
+function initHeroCarousel(){
+  const container = qs('.carousel-container');
+  const track = qs('#carousel-track');
+  if(!container || !track) return;
+  
+  // Clone items for infinite loop
+  const items = qsa('.carousel-item', track);
+  if(items.length === 0) return;
+  
+  // Duplicate items multiple times for seamless infinite scroll
+  const cloneCount = 3;
+  for(let i = 0; i < cloneCount; i++){
+    items.forEach(item => {
+      const clone = item.cloneNode(true);
+      track.appendChild(clone);
+    });
   }
+  
+  let isPaused = false;
+  let isDragging = false;
+  let startX = 0;
+  let currentTranslate = 0;
+  let prevTranslate = 0;
+  let animationID = null;
+  let currentIndex = 0;
+  
+  // Get track width for infinite loop calculation
+  function getTrackWidth(){
+    return track.scrollWidth / (cloneCount + 1);
+  }
+  
+  // Animation loop for smooth scrolling
+  function animation(){
+    if(!isPaused && !isDragging){
+      currentTranslate -= 0.5; // Scroll speed
+      
+      // Reset position for infinite loop
+      const trackWidth = getTrackWidth();
+      if(Math.abs(currentTranslate) >= trackWidth){
+        currentTranslate = 0;
+      }
+      
+      track.style.transform = `translateX(${currentTranslate}px)`;
+    }
+    animationID = requestAnimationFrame(animation);
+  }
+  
+  // Start animation
+  animation();
+  
+  // Pause/Resume functions
+  function pauseCarousel(){
+    isPaused = true;
+    container.classList.add('paused');
+  }
+  
+  function resumeCarousel(){
+    isPaused = false;
+    container.classList.remove('paused');
+  }
+  
+  // Mouse hover - pause only
+  container.addEventListener('mouseenter', pauseCarousel);
+  container.addEventListener('mouseleave', resumeCarousel);
+  
+  // Touch/Mouse drag start
+  function dragStart(e){
+    isDragging = true;
+    startX = e.type.includes('mouse') ? e.pageX : e.touches[0].clientX;
+    prevTranslate = currentTranslate;
+    container.style.cursor = 'grabbing';
+    pauseCarousel();
+  }
+  
+  // Touch/Mouse drag move
+  function dragMove(e){
+    if(!isDragging) return;
+    
+    const currentX = e.type.includes('mouse') ? e.pageX : e.touches[0].clientX;
+    const diff = currentX - startX;
+    currentTranslate = prevTranslate + diff;
+    
+    track.style.transform = `translateX(${currentTranslate}px)`;
+  }
+  
+  // Touch/Mouse drag end
+  function dragEnd(){
+    if(!isDragging) return;
+    
+    isDragging = false;
+    container.style.cursor = 'grab';
+    
+    // Normalize position for infinite loop
+    const trackWidth = getTrackWidth();
+    if(currentTranslate > 0){
+      currentTranslate = -trackWidth + (currentTranslate % trackWidth);
+    } else if(Math.abs(currentTranslate) >= trackWidth){
+      currentTranslate = currentTranslate % trackWidth;
+    }
+    
+    prevTranslate = currentTranslate;
+    resumeCarousel();
+  }
+  
+  // Touch events
+  container.addEventListener('touchstart', dragStart, {passive: true});
+  container.addEventListener('touchmove', dragMove, {passive: true});
+  container.addEventListener('touchend', dragEnd, {passive: true});
+  
+  // Mouse events
+  container.addEventListener('mousedown', dragStart);
+  container.addEventListener('mousemove', dragMove);
+  container.addEventListener('mouseup', dragEnd);
+  container.addEventListener('mouseleave', (e)=>{
+    if(isDragging){
+      dragEnd();
+    }
+  });
+  
+  // Prevent context menu on long press
+  container.addEventListener('contextmenu', (e)=>{
+    if(isDragging) e.preventDefault();
+  });
+  
+  // Keyboard accessibility - Space/Enter to pause/resume
+  container.setAttribute('tabindex', '0');
+  container.setAttribute('role', 'region');
+  container.setAttribute('aria-label', 'Continuous image gallery carousel');
+  container.setAttribute('aria-live', 'polite');
+  
+  container.addEventListener('keydown', (e)=>{
+    if(e.key === ' ' || e.key === 'Enter'){
+      e.preventDefault();
+      if(isPaused){
+        resumeCarousel();
+        container.setAttribute('aria-label', 'Continuous image gallery carousel - playing');
+      } else {
+        pauseCarousel();
+        container.setAttribute('aria-label', 'Continuous image gallery carousel - paused');
+      }
+    }
+  });
+  
+  // Focus management
+  container.addEventListener('focus', ()=>{
+    container.style.outline = '2px solid var(--accent)';
+    container.style.outlineOffset = '4px';
+  });
+  
+  container.addEventListener('blur', ()=>{
+    container.style.outline = 'none';
+  });
+  
+  // Add alt text to images if missing
+  qsa('.carousel-item img', track).forEach((img, idx)=>{
+    if(!img.alt || img.alt === ''){
+      img.alt = `Carousel image ${idx + 1}`;
+    }
+  });
+  
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', ()=>{
+    if(animationID) cancelAnimationFrame(animationID);
+  });
+}
+
+/* Load and Render Videos */
+async function loadVideos(){
+  try{
+    const res = await fetch('content/videos.json?_=' + Date.now());
+    const data = await res.json();
+    return data.videos || [];
+  }catch(err){
+    console.error('Failed to load videos:', err);
+    return [];
+  }
+}
+
+function renderVideoGrid(videos, containerId){
+  const container = qs(`#${containerId}`);
+  if(!container) return;
+  
+  container.innerHTML = videos.map((video, idx) => `
+    <div class="video-item" data-video-url="${video.videoUrl}" data-video-id="${video.id || idx}">
+      <div class="video-wrapper">
+        <img src="${video.thumbnail}" alt="${video.title}" loading="lazy" decoding="async"/>
+      </div>
+      <div class="play-overlay">
+        <div class="play-icon">
+          <i class="fa-solid fa-play"></i>
+        </div>
+      </div>
+      <div class="video-title">${video.title}</div>
+    </div>
+  `).join('');
+  
+  // Add click handlers
+  qsa('.video-item', container).forEach(item => {
+    item.addEventListener('click', ()=>{
+      const videoUrl = item.dataset.videoUrl;
+      const videoId = item.dataset.videoId;
+      // Here you would open a video modal or redirect
+      console.log('Play video:', videoUrl, 'ID:', videoId);
+      // Future: openVideoModal(videoUrl, videoId);
+    });
+  });
+}
+
+async function renderCinematography(){
+  const videos = await loadVideos();
+  // Render first 6 for home page
+  renderVideoGrid(videos.slice(0, 4), 'video-grid');
+  // Render all for cinematography page
+  renderVideoGrid(videos, 'cinematography-grid');
 }
 
 /* Portfolio */
@@ -264,7 +504,7 @@ async function renderPortfolio(){
   if(!bar || !gallery) return;
   // render buttons
   bar.innerHTML = ['all', ...categories.map(c=>c.id)].map(id=>{
-    const label = id==='all' ? (STATE.lang==='ar'? 'الكل' : 'All') : (categories.find(c=>c.id===id)[STATE.lang] || id);
+    const label = id==='all' ? 'All' : (categories.find(c=>c.id===id)?.en || id);
     return `<button type="button" data-filter="${id}">${label}</button>`;
   }).join('');
   // click handlers
@@ -282,7 +522,7 @@ async function renderPortfolio(){
   function drawGrid(cat){
     const filtered = cat==='all' ? images : images.filter(im=> im.category===cat);
     gallery.innerHTML = filtered.map((s,idx)=>{
-      const alt = STATE.lang==='ar'? (s.alt_ar||'') : (s.alt_en||'');
+      const alt = s.alt || '';
       return `<a href="${s.src}" class="g-item" data-index="${idx}" data-title="${alt}">
         <img src="${s.src}" alt="${alt}" loading="lazy" decoding="async"/>
       </a>`;
@@ -342,22 +582,9 @@ function closeLightbox(){
 }
 
 /* Packages */
-function renderPackages(){
-  const wrap = qs('#pricing');
-  if(!wrap || !STATE.copy) return;
-  const tiers = STATE.copy.packages.tiers;
-  const currency = STATE.copy.packages.currency || '';
-  wrap.innerHTML = tiers.map(t=> `
-    <div class="tier">
-      <div class="head">
-        <div class="name" aria-label="tier-name">${t.name}</div>
-        <div class="price" aria-label="tier-price">${currency}${t.price}</div>
-      </div>
-      <ul>
-        ${t.features.map(f=>`<li>${f}</li>`).join('')}
-      </ul>
-    </div>
-  `).join('');
+async function renderPackages(){
+  // Packages rendering would need static content or a packages.json file
+  // For now, this is a placeholder
 }
 
 /* Contact */
@@ -375,10 +602,8 @@ function initContact(){
     alert.textContent=''; alert.className='alert';
     const submitBtn = form.querySelector('button[type="submit"]');
     const prevLabel = submitBtn ? submitBtn.textContent : '';
-    if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = (get(STATE.copy,'contact.form.submit')||'Send') + '…'; }
+    if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
     const fd = new FormData(form);
-    // include current language for localized responses from PHP
-    fd.append('lang', STATE.lang || DEFAULT_LANG);
     try{
       const res = await fetch('contact.php', { method:'POST', body: fd });
       const data = await res.json();
@@ -387,7 +612,7 @@ function initContact(){
       if(data.success) form.reset();
     }catch(err){
       alert.classList.add('err');
-      alert.textContent = get(STATE.copy,'contact.messages.error') || 'Error';
+      alert.textContent = 'Error sending message. Please try again.';
     } finally {
       if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = prevLabel; }
     }
@@ -398,24 +623,22 @@ function initContact(){
 document.addEventListener('DOMContentLoaded', async ()=>{
   STATE.page = document.body.dataset.page;
   // theme
-  applyTheme(readTheme());
+  const currentTheme = readTheme();
+  applyTheme(currentTheme);
+  updateThemeIcons(currentTheme);
   qsa('.theme-toggle').forEach(btn=> btn.addEventListener('click', toggleTheme));
   // mobile menu
   initMobileMenu();
-  // click handlers for lang
-  qsa('[data-lang]').forEach(btn=> btn.addEventListener('click', async ()=>{
-    const lang = btn.dataset.lang;
-    saveLang(lang);
-    await switchLang(lang);
-  }));
-  // initial language
-  const lang = readLang();
-  await switchLang(lang);
+  // navbar scroll behavior
+  initNavbarScroll();
 
   // page specifics
-  if(STATE.page==='home') await renderHome();
+  if(STATE.page==='home'){
+    await renderHome();
+    await renderCinematography();
+  }
   if(STATE.page==='portfolio') await renderPortfolio();
-  if(STATE.page==='packages') renderPackages();
+  if(STATE.page==='cinematography') await renderCinematography();
   if(STATE.page==='contact') initContact();
   // global
   initScrollTop();
@@ -435,50 +658,50 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && qs('#lightbox-modal')?.classList.contains('active')) closeLightbox(); });
 });
 
-document.addEventListener('contextmenu', function(event) {
-  event.preventDefault();
+// document.addEventListener('contextmenu', function(event) {
+//   event.preventDefault();
   
-  if (!document.getElementById('custom-overlay')) {
-    // Create fullscreen transparent black background overlay
-    var overlay = document.createElement('div');
-    overlay.id = 'custom-overlay';
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100vw';
-    overlay.style.height = '100vh';
-    overlay.style.background = 'rgba(0, 0, 0, 0.7)'; // transparent black
-    overlay.style.display = 'flex';
-    overlay.style.justifyContent = 'center';
-    overlay.style.alignItems = 'center';
-    overlay.style.zIndex = '10000';
+//   if (!document.getElementById('custom-overlay')) {
+//     // Create fullscreen transparent black background overlay
+//     var overlay = document.createElement('div');
+//     overlay.id = 'custom-overlay';
+//     overlay.style.position = 'fixed';
+//     overlay.style.top = '0';
+//     overlay.style.left = '0';
+//     overlay.style.width = '100vw';
+//     overlay.style.height = '100vh';
+//     overlay.style.background = 'rgba(0, 0, 0, 0.7)'; // transparent black
+//     overlay.style.display = 'flex';
+//     overlay.style.justifyContent = 'center';
+//     overlay.style.alignItems = 'center';
+//     overlay.style.zIndex = '10000';
 
-    // Create the message box with fade-in animation
-    var msg = document.createElement('div');
-    msg.textContent = 'Hah, nice try!';
-    msg.style.color = '#fff';
-    msg.style.fontSize = '2rem';
-    msg.style.padding = '20px 50px';
-    msg.style.borderRadius = '10px';
-    msg.style.background = 'rgba(0, 0, 0, 0.8)';
-    msg.style.opacity = '0';
-    msg.style.transition = 'opacity 0.5s ease';
+//     // Create the message box with fade-in animation
+//     var msg = document.createElement('div');
+//     msg.textContent = 'Hah, nice try!';
+//     msg.style.color = '#fff';
+//     msg.style.fontSize = '2rem';
+//     msg.style.padding = '20px 50px';
+//     msg.style.borderRadius = '10px';
+//     msg.style.background = 'rgba(0, 0, 0, 0.8)';
+//     msg.style.opacity = '0';
+//     msg.style.transition = 'opacity 0.5s ease';
 
-    overlay.appendChild(msg);
-    document.body.appendChild(overlay);
+//     overlay.appendChild(msg);
+//     document.body.appendChild(overlay);
 
-    // Trigger fade-in
-    setTimeout(() => {
-      msg.style.opacity = '1';
-    }, 10);
+//     // Trigger fade-in
+//     setTimeout(() => {
+//       msg.style.opacity = '1';
+//     }, 10);
 
-    // Fade out and remove after 2 seconds
-    setTimeout(() => {
-      msg.style.opacity = '0';
-      setTimeout(() => {
-        overlay.remove();
-      }, 500);
-    }, 2000);
-  }
-});
+//     // Fade out and remove after 2 seconds
+//     setTimeout(() => {
+//       msg.style.opacity = '0';
+//       setTimeout(() => {
+//         overlay.remove();
+//       }, 500);
+//     }, 2000);
+//   }
+// });
 
