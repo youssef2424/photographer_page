@@ -1,55 +1,69 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
-
-// CONFIG: set recipient email
-$to = 'you@example.com'; // TODO: change to your email address
-$subject = 'New inquiry from photographer website';
-
-// Simple CORS allow same-origin; adjust if needed
 header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST');
+header('Access-Control-Allow-Headers: Content-Type');
+
+// CONFIG: Set your business email address
+$to = 'youssefgerges103@email.com'; // TODO: Change to your actual business email
 
 function respond($ok, $message){
   echo json_encode(['success'=>$ok, 'message'=>$message]);
   exit;
 }
 
-// Read POST
-$name = trim($_POST['name'] ?? '');
-$email = trim($_POST['email'] ?? '');
-$phone = trim($_POST['phone'] ?? '');
-$message = trim($_POST['message'] ?? '');
-$lang = $_POST['lang'] ?? 'en';
+// Read JSON input
+$json = file_get_contents('php://input');
+$data = json_decode($json, true);
 
-// Localized messages fallback
-$messages = [
-  'en' => [
-    'success' => 'Thanks! Your message has been sent.',
-    'invalid' => 'Please complete all required fields correctly.',
-    'error' => 'Something went wrong. Please try again.'
-  ],
-  'ar' => [
-    'success' => 'شكرًا! تم إرسال رسالتك.',
-    'invalid' => 'يرجى إكمال الحقول المطلوبة بشكل صحيح.',
-    'error' => 'حدث خطأ ما. حاول مرة أخرى.'
-  ]
-];
+// Extract fields
+$couple_names = trim($data['couple_names'] ?? '');
+$wedding_date = trim($data['wedding_date'] ?? '');
+$location = trim($data['location'] ?? '');
+$phone = trim($data['phone'] ?? '');
+$email = trim($data['email'] ?? '');
+$message = trim($data['message'] ?? '');
 
-$M = $messages[$lang] ?? $messages['en'];
+// Validate required fields
+if(empty($couple_names) || empty($wedding_date) || empty($location) || empty($phone) || empty($email) || empty($message)){
+  respond(false, 'Please complete all required fields.');
+}
 
-// Validate
-if($name === '' || $message === '') respond(false, $M['invalid']);
-if(!filter_var($email, FILTER_VALIDATE_EMAIL)) respond(false, $M['invalid']);
+// Validate email format
+if(!filter_var($email, FILTER_VALIDATE_EMAIL)){
+  respond(false, 'Please enter a valid email address.');
+}
 
-// Compose email
-$body = "Name: $name\nEmail: $email\nPhone: $phone\n\nMessage:\n$message\n";
-$headers = 'From: '.$email."\r\n".
-          'Reply-To: '.$email."\r\n".
-          'X-Mailer: PHP/'.phpversion();
+// Validate phone (basic check)
+if(!preg_match('/^[\d\s\-\+\(\)]+$/', $phone) || strlen($phone) < 10){
+  respond(false, 'Please enter a valid phone number.');
+}
 
-// Send
+// Compose email subject and body
+$subject = "Wedding Inquiry - $couple_names";
+
+$body = "New Wedding Inquiry\n\n";
+$body .= "Couple Names: $couple_names\n";
+$body .= "Wedding/Session Date: $wedding_date\n";
+$body .= "Location: $location\n";
+$body .= "Phone: $phone\n";
+$body .= "Email: $email\n\n";
+$body .= "Message:\n$message\n\n";
+$body .= "---\n";
+$body .= "Sent from photographer website contact form\n";
+$body .= "Date: " . date('Y-m-d H:i:s') . "\n";
+
+// Email headers
+$headers = "From: $email\r\n";
+$headers .= "Reply-To: $email\r\n";
+$headers .= "X-Mailer: PHP/" . phpversion() . "\r\n";
+$headers .= "Content-Type: text/plain; charset=utf-8\r\n";
+
+// Send email
 $sent = @mail($to, $subject, $body, $headers);
+
 if($sent){
-  respond(true, $M['success']);
+  respond(true, 'Thank you! Your message has been sent successfully. We\'ll get back to you soon!');
 } else {
-  respond(false, $M['error']);
+  respond(false, 'Sorry, there was an error sending your message. Please try again or contact us directly.');
 }

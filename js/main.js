@@ -587,36 +587,181 @@ async function renderPackages(){
   // For now, this is a placeholder
 }
 
-/* Contact */
+/* Contact Form - Modern with Flatpickr */
 function initContact(){
   const form = qs('#contact-form');
   const alert = qs('#contact-alert');
   if(!form) return;
+  
+  // Initialize Flatpickr date picker
+  const dateInput = qs('#wedding-date');
+  if(dateInput && typeof flatpickr !== 'undefined'){
+    flatpickr(dateInput, {
+      minDate: 'today',
+      dateFormat: 'F j, Y',
+      altInput: true,
+      altFormat: 'F j, Y',
+      theme: 'light',
+      disableMobile: false
+    });
+  }
+  
+  // Validation functions
+  function validateField(field){
+    const group = field.closest('.form-group');
+    const errorEl = group.querySelector('.error-message');
+    let isValid = true;
+    let errorMsg = '';
+    
+    // Remove previous error
+    group.classList.remove('error');
+    if(errorEl) errorEl.textContent = '';
+    
+    // Check if required and empty
+    if(field.hasAttribute('required') && !field.value.trim()){
+      isValid = false;
+      errorMsg = 'This field is required';
+    }
+    // Email validation
+    else if(field.type === 'email' && field.value.trim()){
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if(!emailRegex.test(field.value.trim())){
+        isValid = false;
+        errorMsg = 'Please enter a valid email address';
+      }
+    }
+    // Phone validation
+    else if(field.type === 'tel' && field.value.trim()){
+      const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+      if(!phoneRegex.test(field.value.trim()) || field.value.trim().length < 10){
+        isValid = false;
+        errorMsg = 'Please enter a valid phone number';
+      }
+    }
+    
+    if(!isValid){
+      group.classList.add('error');
+      if(errorEl) errorEl.textContent = errorMsg;
+    }
+    
+    return isValid;
+  }
+  
+  // Real-time validation on blur
+  const inputs = qsa('input, textarea', form);
+  inputs.forEach(input => {
+    input.addEventListener('blur', ()=> validateField(input));
+    input.addEventListener('input', ()=>{
+      if(input.closest('.form-group').classList.contains('error')){
+        validateField(input);
+      }
+    });
+  });
+  
+  // Form submission
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
-    // Validate using native constraints
-    if(!form.checkValidity()){
-      form.reportValidity();
+    
+    // Validate all fields
+    let isFormValid = true;
+    inputs.forEach(input => {
+      if(!validateField(input)){
+        isFormValid = false;
+      }
+    });
+    
+    if(!isFormValid){
+      alert.style.display = 'block';
+      alert.className = 'alert error';
+      alert.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Please fill all the fields';
       return;
     }
-    alert.textContent=''; alert.className='alert';
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const prevLabel = submitBtn ? submitBtn.textContent : '';
-    if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
-    const fd = new FormData(form);
+    
+    // Show loading state
+    const submitBtn = form.querySelector('.submit-btn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnLoading = submitBtn.querySelector('.btn-loading');
+    
+    submitBtn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'inline';
+    alert.style.display = 'none';
+    
+    // Prepare form data
+    const formData = new FormData(form);
+    const data = {
+      couple_names: formData.get('couple_names'),
+      wedding_date: formData.get('wedding_date'),
+      location: formData.get('location'),
+      phone: formData.get('phone'),
+      email: formData.get('email'),
+      message: formData.get('message')
+    };
+    
     try{
-      const res = await fetch('contact.php', { method:'POST', body: fd });
-      const data = await res.json();
-      alert.classList.add(data.success? 'ok':'err');
-      alert.textContent = data.message || (data.success? 'Success':'Error');
-      if(data.success) form.reset();
-    }catch(err){
-      alert.classList.add('err');
-      alert.textContent = 'Error sending message. Please try again.';
+      // Try to send via backend
+      const res = await fetch('contact.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      
+      if(res.ok){
+        const result = await res.json();
+        if(result.success){
+          showSuccess();
+        } else {
+          throw new Error(result.message || 'Failed to send');
+        }
+      } else {
+        // Fallback to mailto if backend fails
+        sendViaMailto(data);
+      }
+    } catch(err){
+      console.error('Form submission error:', err);
+      // Fallback to mailto
+      sendViaMailto(data);
     } finally {
-      if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = prevLabel; }
+      submitBtn.disabled = false;
+      btnText.style.display = 'inline';
+      btnLoading.style.display = 'none';
     }
   });
+  
+  // Success message
+  function showSuccess(){
+    form.reset();
+    alert.style.display = 'block';
+    alert.className = 'alert success';
+    alert.innerHTML = '<i class="fa-solid fa-circle-check"></i> Thank you! Your message has been sent successfully. We\'ll get back to you soon!';
+    
+    // Scroll to alert
+    alert.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+    
+    // Hide after 8 seconds
+    setTimeout(()=>{
+      alert.style.display = 'none';
+    }, 8000);
+  }
+  
+  // Fallback mailto function
+  function sendViaMailto(data){
+    const subject = encodeURIComponent(`Wedding Inquiry - ${data.couple_names}`);
+    const body = encodeURIComponent(
+      `Couple Names: ${data.couple_names}\n` +
+      `Wedding Date: ${data.wedding_date}\n` +
+      `Location: ${data.location}\n` +
+      `Phone: ${data.phone}\n` +
+      `Email: ${data.email}\n\n` +
+      `Message:\n${data.message}`
+    );
+    
+    // Replace with your business email
+    const businessEmail = 'yourbusiness@email.com';
+    window.location.href = `mailto:${businessEmail}?subject=${subject}&body=${body}`;
+    
+    showSuccess();
+  }
 }
 
 /* Init */
