@@ -51,7 +51,7 @@ h3{font-size:1.25rem;line-height:1.25}
 
 /* Scrolled State - Solid Background */
 .site-header.scrolled{
-  background:rgba(255, 255, 255, 0.75);
+  background:#0000004F;
   backdrop-filter:saturate(180%);
   box-shadow:0 2px 20px rgba(0,0,0,0.08);
 }
@@ -104,7 +104,7 @@ h3{font-size:1.25rem;line-height:1.25}
 }
 
 .site-header.scrolled .nav-links a{
-  color:var(--fg);
+  color: #fff;
 }
 
 .nav-links a.active,
@@ -1028,13 +1028,13 @@ h3{font-size:1.25rem;line-height:1.25}
 @media(max-width:991.98px){.fixed-left,.fixed-right{display:none}}
 
 /* Header burger & overlay menu */
-.burger{display:none;background:transparent;border:0;color:var(--fg);font-size:1.5rem}
+.burger{display:none;background:transparent;border:0;color:#fff;font-size:1.5rem}
 @media(max-width:991.98px){.burger{display:inline-flex;align-items:center;justify-content:center}}
 .mobile-menu{position:fixed;inset:0;background:var(--mobile-backdrop);backdrop-filter:saturate(120%) blur(4px);display:none;z-index:1400}
 .mobile-menu.active{display:block}
 .mobile-menu .panel{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
 .mobile-menu nav{display:flex;flex-direction:column;gap:25px;text-align:center}
-.mobile-menu a{font-size:2rem}
+.mobile-menu a{font-size:40px}
 .mobile-top{position:fixed;top:40px;left:30px;right:30px;display:flex;justify-content:space-between;align-items:center;z-index:1500;flex-direction: row-reverse;}
 body.menu-open{overflow:hidden}
 .header-theme-toggle{display:none}

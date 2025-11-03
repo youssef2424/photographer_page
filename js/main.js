@@ -183,7 +183,9 @@ function initMobileMenu(){
     if(lastFocused) lastFocused.focus();
   }
   burger.addEventListener('click', ()=> overlay.classList.contains('active') ? close() : open());
-  overlay.addEventListener('click', (e)=>{ if(e.target === overlay || e.target === panel) close(); });
+  overlay.addEventListener('click', (e)=> {
+  e.stopPropagation(); // Added this line to make the x works
+  overlay.classList.contains('active') ? close() : open();   });
 }
 
 /* Section reveal animations */
