@@ -752,9 +752,22 @@ h3{font-size:1.25rem;line-height:1.25}
 }
 
 /* About */
-.about-wrap{display:grid;gap: 30px;padding: 20px 40px;grid-template-columns:1fr}
+.about-wrap{display:grid;gap: 30px;padding: 20px 15px;grid-template-columns:1fr;justify-items: center;}
 @media(min-width:992px){.about-wrap{grid-template-columns:1fr 1fr;align-items:center}}
-.about-img{border-radius:12px;overflow:hidden}
+
+.about-img img{
+  box-shadow: 28px -25px 0px -11px #adadad45;
+  height:auto;
+  display:block;
+  object-fit:contain;
+}
+
+@media(min-width:992px){
+  .about-img img{
+    max-width:100%;
+    max-height:575px;
+  }
+}
 
 /* Portfolio */
 .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
